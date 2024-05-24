@@ -1,0 +1,1 @@
+python3  src/utils/data_gen/generate_synthetic_data.py --config_file configs/data_generation/synthetic_data_nonlinear.yaml

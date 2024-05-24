@@ -1,0 +1,11 @@
+model: pcmci
+trainer:
+  _target_: src.baselines.PCMCITrainer.PCMCITrainer
+  _partial_: true
+
+  ci_test: ParCorr
+  single_graph: false
+  pcmci_plus: true
+  pc_alpha: 0.01
+
+  group_by_graph: false

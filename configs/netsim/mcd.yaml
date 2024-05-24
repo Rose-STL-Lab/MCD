@@ -1,0 +1,63 @@
+# hyperparameters
+watch_gradients: false
+num_epochs: 10000
+model: mcd
+lag: 2
+monitor_checkpoint_based_on: likelihood
+
+hypernet:
+  _target_: src.modules.MultiTemporalHyperNet.MultiTemporalHyperNet
+  order: linear
+  num_bins: 8
+  skip_connection: true
+  
+# decoder options
+decoder:
+  _target_: src.modules.MultiCausalDecoder.MultiCausalDecoder
+  skip_connection: true
+
+trainer:
+  _target_: src.model.MCDTrainer.MCDTrainer
+  _partial_: true
+
+  batch_size: 64
+  sparsity_factor: 25
+  likelihood_loss: flow
+  matrix_temperature: 0.25
+  threeway_graph_dist: true
+  training_procedure: auglag
+  skip_auglag_epochs: 0
+  graph_selection_prior_lambda: 0.0
+
+  # multi-rhino settings
+  num_graphs: 20
+  use_correct_mixture_index: false
+  use_true_graph: false
+  log_num_unique_graphs: false
+
+auglag_config:
+  _target_: src.training.auglag.AugLagLRConfig
+  
+  lr_update_lag: 500
+  lr_update_lag_best: 500
+  lr_init_dict:
+    vardist: 0.01
+    functional_relationships: 0.001
+    noise_dist: 0.001
+    mixing_probs: 0.01
+
+  aggregation_period: 20
+  lr_factor: 0.1
+  max_lr_down: 3
+  penalty_progress_rate:  0.65
+  safety_rho: 1e13
+  safety_alpha: 1e13
+  inner_early_stopping_patience: 1500
+  max_outer_steps: 60
+  patience_penalty_reached: 100
+  patience_max_rho: 50
+  penalty_tolerance: 1e-8
+  max_inner_steps: 2000
+  force_not_converged: false
+  init_rho: 1
+  init_alpha: 0

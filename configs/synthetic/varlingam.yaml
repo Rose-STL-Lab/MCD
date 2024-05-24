@@ -1,0 +1,4 @@
+model: varlingam
+trainer:
+  _target_: src.baselines.VARLiNGAMTrainer.VARLiNGAMTrainer
+  _partial_: true

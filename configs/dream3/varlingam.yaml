@@ -1,0 +1,7 @@
+model: varlingam
+lag: 2 
+dream3_size: 100
+
+trainer:
+  _target_: src.baselines.VARLiNGAMTrainer.VARLiNGAMTrainer
+  _partial_: true

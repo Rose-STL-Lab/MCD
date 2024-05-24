@@ -1,0 +1,7 @@
+
+precision: 32
+wandb_project: causal_mixture_model
+gpu: [0]
+num_workers: 8
+dataset_dir: 'data/'
+random_seed: 0

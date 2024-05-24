@@ -1,0 +1,14 @@
+model: dynotears
+
+trainer:
+  _target_: src.baselines.DYNOTEARSTrainer.DYNOTEARSTrainer
+  _partial_: true
+
+  single_graph: true
+  max_iter: 1000
+  lambda_w: 0.10
+  lambda_a: 0.10
+  w_threshold: 0.01
+  h_tol: 1e-8
+  lag: 1
+  group_by_graph: false

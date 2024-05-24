@@ -1,0 +1,1 @@
+python3  src/utils/data_gen/generate_perturb_syn.py --config_file configs/data_generation/perturb_data.yaml

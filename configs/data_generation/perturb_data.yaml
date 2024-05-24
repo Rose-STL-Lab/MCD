@@ -1,0 +1,31 @@
+
+# graph settings
+num_timesteps: 100
+lag: 2
+history_dep_noise : true
+burnin_length: 100
+noise_level: 0.5
+function_type: mlp # options: mlp, spline, spline_product, conditional_spline, mlp_noise, inverse_noise_spline
+noise_function_type: spline_product # options: same as function_type
+base_noise_type: gaussian # options: gaussian, uniform
+num_samples: 1000
+
+disable_inst: false # whether to exclude instantaneous edges
+inst_graph_type: ER # options: SF, ER
+lag_graph_type: ER # options: SF, ER
+save_dir: "data/synthetic"
+
+random_seed: 
+- 0
+
+p_array:
+- 0.005
+- 0.008
+- 0.01
+- 0.05
+- 0.1
+
+num_nodes: 10
+num_graphs:
+- 5
+- 10
