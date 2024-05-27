@@ -22,7 +22,7 @@ trainer:
 
   shuffle: False
   batch_size: 64
-  sparsity_factor: 10
+  sparsity_factor: 20
   likelihood_loss: flow
   matrix_temperature: 0.25
   threeway_graph_dist: true

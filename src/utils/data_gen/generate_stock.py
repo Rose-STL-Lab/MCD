@@ -71,7 +71,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("Stock data generator from Yahoo Financials")
     parser.add_argument("--start_date", type=str, default='2016-01-01')
     parser.add_argument("--end_date", type=str, default='2023-07-01')
-    parser.add_argument('--chunk_size', type=int, default=31, help='Number of days to chunk together into one sample. Default is 91 days')
+    parser.add_argument('--chunk_size', type=int, default=31, help='Number of days to chunk together into one sample. Default is 31 days')
     parser.add_argument('--stock_list_file', type=str)
     parser.add_argument('--save_dir', type=str)
     
