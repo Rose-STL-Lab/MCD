@@ -1,6 +1,6 @@
 # Discovering Mixtures of Structural Causal Models from Time Series Data
 
-Code implementation of the paper "Discovering Mixtures of Structural Causal Models from Time Series Data", set to appear at ICML 2024, Vienna.
+Implementation of the paper "Discovering Mixtures of Structural Causal Models from Time Series Data", set to appear at ICML 2024, Vienna.
 
 ## Requirements
 
@@ -51,6 +51,10 @@ Change the name of the `wandb` project in the config file.
 - S&P100: Run `python3 -m src.train +dataset=snp100 +snp100=mcd`
 
 Results are stored in the `results/` folder.
+
+## Acknowledgement
+
+We borrowed a lot of code from [Project Causica](https://github.com/microsoft/causica).
 
 ## Citation
 
