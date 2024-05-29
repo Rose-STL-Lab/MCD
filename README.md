@@ -1,6 +1,6 @@
 # Discovering Mixtures of Structural Causal Models from Time Series Data
 
-Implementation of the paper "Discovering Mixtures of Structural Causal Models from Time Series Data", set to appear at ICML 2024, Vienna.
+Implementation of the paper "Discovering Mixtures of Structural Causal Models from Time Series Data", to appear at ICML 2024, Vienna.
 
 ## Requirements
 
