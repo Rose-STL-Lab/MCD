@@ -2,6 +2,20 @@
 
 Implementation of the paper "Discovering Mixtures of Structural Causal Models from Time Series Data", to appear at ICML 2024, Vienna.
 
+Mixture Causal Discovery (MCD) aims to infer multiple causal graphs from time-series data. 
+
+![Overview](assets/overview_fig.png)
+*Model Overview*
+
+![S&P100 Results](assets/snp100_results.png)
+*Results on the S&P100 dataset*
+
+<style>
+  img {
+    width: 50%;
+  }
+</style>
+
 ## Requirements
 
 - NVIDIA GPU with minimum CUDA 11.8 installed.
