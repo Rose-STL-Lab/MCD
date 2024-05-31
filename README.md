@@ -4,17 +4,16 @@ Implementation of the paper "Discovering Mixtures of Structural Causal Models fr
 
 Mixture Causal Discovery (MCD) aims to infer multiple causal graphs from time-series data. 
 
-![Overview](assets/overview_fig.png)
-*Model Overview*
+<div style="text-align: center;">
+  <img src="assets/overview_fig.png" alt="Overview" style="width: 50%;">
+  <p><em>Model Overview</em></p>
+</div>
 
-![S&P100 Results](assets/snp100_results.png)
-*Results on the S&P100 dataset*
+<div style="text-align: center;">
+  <img src="assets/snp100_results.png" alt="S&P100 Results" style="width: 50%;">
+  <p><em>Results on the S&P100 dataset</em></p>
+</div>
 
-<style>
-  img {
-    width: 50%;
-  }
-</style>
 
 ## Requirements
 
