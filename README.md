@@ -67,7 +67,7 @@ Results are stored in the `results/` folder.
 
 ## Acknowledgement
 
-We borrowed a lot of code from [Project Causica](https://github.com/microsoft/causica).
+We implemented some parts of our framework using code from [Project Causica](https://github.com/microsoft/causica).
 
 ## Citation
 
