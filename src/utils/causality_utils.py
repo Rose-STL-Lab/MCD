@@ -2,14 +2,10 @@
 Borrowed from github.com/microsoft/causica
 """
 
-from itertools import product
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 import torch
-import torch.distributions as td
-from sklearn import metrics
-
 
 def convert_temporal_to_static_adjacency_matrix(
     adj_matrix: np.ndarray, conversion_type: str, fill_value: Union[float, int] = 0.0
@@ -43,11 +39,13 @@ def convert_temporal_to_static_adjacency_matrix(
     if conversion_type == "full_time":
         block_fill_value = np.full((n_nodes, n_nodes), fill_value)
     else:
-        block_fill_value = np.full((batch_dim, n_lag * n_nodes, (n_lag - 1) * n_nodes), fill_value)
+        block_fill_value = np.full(
+            (batch_dim, n_lag * n_nodes, (n_lag - 1) * n_nodes), fill_value)
 
     if conversion_type == "full_time":
         static_adj = np.sum(
-            np.stack([np.kron(np.diag(np.ones(n_lag - i), k=i), adj_matrix[:, i, :, :]) for i in range(n_lag)], axis=1),
+            np.stack([np.kron(np.diag(np.ones(n_lag - i), k=i),
+                     adj_matrix[:, i, :, :]) for i in range(n_lag)], axis=1),
             axis=1,
         )  # [N, n_lag*from, n_lag*to]
         static_adj += np.kron(
@@ -62,7 +60,8 @@ def convert_temporal_to_static_adjacency_matrix(
             -1, n_lag * n_nodes, n_nodes
         )  # [N, (lag+1)*num_node, num_node]
         # Static graph
-        static_adj = np.concatenate((block_fill_value, block_column), axis=2)  # [N, (lag+1)*num_node, (lag+1)*num_node]
+        # [N, (lag+1)*num_node, (lag+1)*num_node]
+        static_adj = np.concatenate((block_fill_value, block_column), axis=2)
 
     return np.squeeze(static_adj)
 
@@ -88,16 +87,20 @@ def approximate_maximal_acyclic_subgraph(adj_matrix: np.ndarray, n_samples: int 
     # assign each node with a order
     adj_dag = np.zeros_like(adj_matrix)
     for _ in range(n_samples):
-        random_order = np.expand_dims(np.random.permutation(adj_matrix.shape[0]), 0)
+        random_order = np.expand_dims(
+            np.random.permutation(adj_matrix.shape[0]), 0)
         # subgraph with only forward edges defined by the assigned order
-        adj_forward = ((random_order.T > random_order).astype(int)) * adj_matrix
+        adj_forward = (
+            (random_order.T > random_order).astype(int)) * adj_matrix
         # subgraph with only backward edges defined by the assigned order
-        adj_backward = ((random_order.T < random_order).astype(int)) * adj_matrix
+        adj_backward = (
+            (random_order.T < random_order).astype(int)) * adj_matrix
         # return the subgraph with the least deleted edges
         adj_dag_n = adj_forward if adj_backward.sum() < adj_forward.sum() else adj_backward
         if adj_dag_n.sum() > adj_dag.sum():
             adj_dag = adj_dag_n
     return adj_dag
+
 
 def int2binlist(i: int, n_bits: int):
     """
@@ -106,6 +109,7 @@ def int2binlist(i: int, n_bits: int):
     assert i < 2**n_bits
     str_list = list(np.binary_repr(i, n_bits))
     return [int(i) for i in str_list]
+
 
 def cpdag2dags(cp_mat: np.ndarray, samples: Optional[int] = None) -> np.ndarray:
     """
@@ -130,16 +134,18 @@ def cpdag2dags(cp_mat: np.ndarray, samples: Optional[int] = None) -> np.ndarray:
 
     # prune cycles if the matrix of determined edges is not a dag
     if dag_pen_np(cp_determined_subgraph.copy()) != 0.0:
-        cp_determined_subgraph = approximate_maximal_acyclic_subgraph(cp_determined_subgraph, 1000)
+        cp_determined_subgraph = approximate_maximal_acyclic_subgraph(
+            cp_determined_subgraph, 1000)
 
     # number of parent nodes for each node under the well determined matrix
-    N_in_nodes = cp_determined_subgraph.sum(axis=0)
+    n_in_nodes = cp_determined_subgraph.sum(axis=0)
 
     # lower triangular version of cycles edges: only keep cycles in one direction.
     cycles_tril = np.tril(cycle_mat, k=-1)
 
     # indices of potential new edges
-    undetermined_idx_mat = np.array(np.nonzero(cycles_tril)).T  # (N_undedetermined, 2)
+    undetermined_idx_mat = np.array(np.nonzero(
+        cycles_tril)).T  # (N_undedetermined, 2)
 
     # number of undetermined edges
     N_undetermined = int(cycles_tril.sum())
@@ -163,18 +169,22 @@ def cpdag2dags(cp_mat: np.ndarray, samples: Optional[int] = None) -> np.ndarray:
         mask = np.array(int2binlist(mask_index, N_undetermined))
 
         # extract list of indices which our new edges are pointing into
-        incoming_edges = np.take_along_axis(undetermined_idx_mat, mask[:, None], axis=1).squeeze()
+        incoming_edges = np.take_along_axis(
+            undetermined_idx_mat, mask[:, None], axis=1).squeeze()
 
         # check if multiple edges are pointing at same node
-        _, unique_counts = np.unique(incoming_edges, return_index=False, return_inverse=False, return_counts=True)
+        _, unique_counts = np.unique(
+            incoming_edges, return_index=False, return_inverse=False, return_counts=True)
 
         # check if new colider has been created by checkig if multiple edges point at same node or if new edge points at existing child node
-        new_colider = np.any(unique_counts > 1) or np.any(N_in_nodes[incoming_edges] > 0)
+        new_colider = np.any(unique_counts > 1) or np.any(
+            n_in_nodes[incoming_edges] > 0)
 
         if not new_colider:
             # get indices of new edges by sampling from lower triangular mat and upper triangular according to indices
             edge_selection = undetermined_idx_mat.copy()
-            edge_selection[mask == 0, :] = np.fliplr(edge_selection[mask == 0, :])
+            edge_selection[mask == 0, :] = np.fliplr(
+                edge_selection[mask == 0, :])
 
             # add new edges to matrix and add to dag list
             new_dag = cp_determined_subgraph.copy()

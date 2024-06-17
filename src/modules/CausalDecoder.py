@@ -1,21 +1,21 @@
 import lightning.pytorch as pl
-import torch.nn as nn
+from torch import nn
 import torch
-import math
 from src.utils.torch_utils import generate_fully_connected
+
 
 class CausalDecoder(pl.LightningModule):
 
     def __init__(self,
-                 data_dim: int, 
-                 lag: int, 
+                 data_dim: int,
+                 lag: int,
                  num_nodes: int,
-                 embedding_dim: int = None, 
+                 embedding_dim: int = None,
                  skip_connection: bool = False,
                  linear: bool = False
                  ):
         super().__init__()
-        
+
         if embedding_dim is None:
             embedding_dim = num_nodes * data_dim
 
@@ -30,15 +30,13 @@ class CausalDecoder(pl.LightningModule):
                 torch.randn(self.lag + 1, self.num_nodes,
                             self.embedding_dim, device=self.device) * 0.01
             ), requires_grad=True)  # shape (lag+1, num_nodes, embedding_dim)
-        
-                
+
             input_dim = 2*self.embedding_dim
             self.nn_size = max(4 * num_nodes, self.embedding_dim, 64)
 
-
             self.f = generate_fully_connected(
                 input_dim=input_dim,
-                output_dim=num_nodes*data_dim, #potentially num_nodes
+                output_dim=num_nodes*data_dim,  # potentially num_nodes
                 hidden_dims=[self.nn_size, self.nn_size],
                 non_linearity=nn.LeakyReLU,
                 activation=nn.Identity,
@@ -80,7 +78,7 @@ class CausalDecoder(pl.LightningModule):
             assert (A.shape[0] == batch and A.shape[1] == lag+1 and A.shape[2] ==
                     num_nodes and A.shape[2] == num_nodes)
 
-            if embeddings == None:
+            if embeddings is None:
                 E = self.embeddings.expand(
                     X_input.shape[0], -1, -1, -1
                 )
@@ -94,14 +92,14 @@ class CausalDecoder(pl.LightningModule):
             A_temp = A.flip([1])
 
             # get the parents of X
-            X_sum = torch.einsum("blij,blio->bjo", A_temp, X_enc)  # / num_nodes
-            
+            X_sum = torch.einsum("blij,blio->bjo", A_temp,
+                                 X_enc)  # / num_nodes
+
             X_sum = torch.cat([X_sum, E[:, 0, :, :]], dim=-1)
             # (batch, num_nodes, embedding_dim)
             # pass through f network to get the predictions
-            
-            self.group_mask = torch.eye(num_nodes*data_dim).to(self.device)
-            return torch.sum(self.f(X_sum)*self.group_mask, dim=-1).unsqueeze(-1)  # (batch, num_nodes, data_dim)
 
-        else:
-            return torch.einsum("lij,blio->bjo", (self.w * A[0]).flip([0]), X_input)
+            group_mask = torch.eye(num_nodes*data_dim).to(self.device)
+            # (batch, num_nodes, data_dim)
+            return torch.sum(self.f(X_sum)*group_mask, dim=-1).unsqueeze(-1)
+        return torch.einsum("lij,blio->bjo", (self.w * A[0]).flip([0]), X_input)

@@ -1,9 +1,10 @@
+from typing import Dict, Tuple
 import lightning.pytorch as pl
-import torch.nn as nn
+from torch import nn
 import torch
-from typing import Dict, List, Optional, Tuple, Type
 from src.modules.MultiEmbedding import MultiEmbedding
 from src.utils.torch_utils import generate_fully_connected
+
 
 class MultiTemporalHyperNet(pl.LightningModule):
 
@@ -18,7 +19,7 @@ class MultiTemporalHyperNet(pl.LightningModule):
                  num_bins: int = 8,
                  dropout_p: float = 0.0
                  ):
-        
+
         super().__init__()
 
         if embedding_dim is not None:
@@ -47,7 +48,7 @@ class MultiTemporalHyperNet(pl.LightningModule):
                 (self.num_bins - 1),
                 self.num_bins,
             ]  # this is for linear order conditional spline flow
-        
+
         self.total_param = sum(self.param_dim)
         input_dim = 2*self.embedding_dim
 
@@ -55,7 +56,7 @@ class MultiTemporalHyperNet(pl.LightningModule):
 
         self.f = generate_fully_connected(
             input_dim=input_dim,
-            output_dim=self.total_param, #potentially num_nodes
+            output_dim=self.total_param,  # potentially num_nodes
             hidden_dims=[self.nn_size, self.nn_size],
             non_linearity=nn.LeakyReLU,
             activation=nn.Identity,
@@ -79,7 +80,7 @@ class MultiTemporalHyperNet(pl.LightningModule):
                                             lag=self.lag,
                                             num_graphs=self.num_graphs,
                                             embedding_dim=self.embedding_dim)
-        
+
     def forward(self, X: Dict[str, torch.Tensor]) -> Tuple[torch.Tensor, ...]:
         """
         Args:
@@ -96,11 +97,11 @@ class MultiTemporalHyperNet(pl.LightningModule):
 
         A = X["A"]
         X_in = X["X"]
-        
-        E = self.th_embeddings.get_embeddings()
-        #X["embeddings"]
 
-        batch, lag, num_nodes, data_dim = X_in.shape
+        E = self.th_embeddings.get_embeddings()
+        # X["embeddings"]
+
+        batch, lag, num_nodes, _ = X_in.shape
 
         # reshape X to the correct shape
         A = A.unsqueeze(0).expand((batch, -1, -1, -1, -1))
@@ -108,11 +109,11 @@ class MultiTemporalHyperNet(pl.LightningModule):
         X_in = X_in.unsqueeze(1).expand((-1, self.num_graphs, -1, -1, -1))
 
         # ensure we have the correct shape
-        assert (A.shape[0] == batch and A.shape[1] == self.num_graphs and 
-                A.shape[2] == lag + 1 and A.shape[3] == num_nodes and 
+        assert (A.shape[0] == batch and A.shape[1] == self.num_graphs and
+                A.shape[2] == lag + 1 and A.shape[3] == num_nodes and
                 A.shape[4] == num_nodes)
-        assert (E.shape[0] == batch and E.shape[1] == self.num_graphs 
-                and E.shape[2] == lag+1 and E.shape[3] == num_nodes 
+        assert (E.shape[0] == batch and E.shape[1] == self.num_graphs
+                and E.shape[2] == lag+1 and E.shape[3] == num_nodes
                 and E.shape[4] == self.embedding_dim)
 
         # shape [batch_size, num_graphs, lag, num_nodes, embedding_size]
@@ -129,7 +130,7 @@ class MultiTemporalHyperNet(pl.LightningModule):
         # (batch, num_graphs, num_nodes, embedding_dim)
         A_temp = A[:, :, 1:].flip([2])
 
-        X_sum = torch.einsum("bnlij,bnlio->bnjo", A_temp, X_enc) #/ num_nodes
+        X_sum = torch.einsum("bnlij,bnlio->bnjo", A_temp, X_enc)  # / num_nodes
 
         X_sum = torch.cat((X_sum, E[:, :, 0, :, :]), dim=-1)
 

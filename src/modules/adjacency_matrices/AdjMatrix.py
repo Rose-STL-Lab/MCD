@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import torch
 
+
 class AdjMatrix(ABC):
     """
     Adjacency matrix interface for DECI

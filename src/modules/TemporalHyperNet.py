@@ -1,8 +1,7 @@
+from typing import Dict, Tuple
 import lightning.pytorch as pl
-import torch.nn as nn
+from torch import nn
 import torch
-from typing import Dict, List, Optional, Tuple, Type
-import math
 from src.utils.torch_utils import generate_fully_connected
 
 class TemporalHyperNet(pl.LightningModule):
@@ -26,7 +25,7 @@ class TemporalHyperNet(pl.LightningModule):
         self.order = order
         self.num_bins = num_bins
         self.num_nodes = num_nodes
-        
+
         if self.order == "quadratic":
             self.param_dim = [
                 self.num_bins,
@@ -40,14 +39,14 @@ class TemporalHyperNet(pl.LightningModule):
                 (self.num_bins - 1),
                 self.num_bins,
             ]  # this is for linear order conditional spline flow
-        
+
         self.total_param = sum(self.param_dim)
         input_dim = 2*self.embedding_dim
         self.nn_size = max(4 * num_nodes, self.embedding_dim, 64)
 
         self.f = generate_fully_connected(
             input_dim=input_dim,
-            output_dim=self.total_param, #potentially num_nodes
+            output_dim=self.total_param,  # potentially num_nodes
             hidden_dims=[self.nn_size, self.nn_size],
             non_linearity=nn.LeakyReLU,
             activation=nn.Identity,
@@ -69,10 +68,9 @@ class TemporalHyperNet(pl.LightningModule):
 
         self.embeddings = nn.Parameter((
             torch.randn(self.lag + 1, self.num_nodes,
-                    self.embedding_dim, device=self.device) * 0.01
+                        self.embedding_dim, device=self.device) * 0.01
         ), requires_grad=True)  # shape (lag+1, num_nodes, embedding_dim)
 
-            
     def forward(self, X: Dict[str, torch.Tensor]) -> Tuple[torch.Tensor, ...]:
         """
         Args:
@@ -90,13 +88,13 @@ class TemporalHyperNet(pl.LightningModule):
         A = X["A"]
         X_in = X["X"]
         embeddings = X["embeddings"]
-        batch, lag, num_nodes, data_dim = X_in.shape
+        batch, lag, num_nodes, _ = X_in.shape
 
         # ensure we have the correct shape
         assert (A.shape[0] == batch and A.shape[1] == lag +
                 1 and A.shape[2] == num_nodes and A.shape[3] == num_nodes)
 
-        if embeddings == None:
+        if embeddings is None:
             E = self.embeddings.expand(
                 X_in.shape[0], -1, -1, -1
             )
@@ -115,7 +113,7 @@ class TemporalHyperNet(pl.LightningModule):
         # (batch, num_nodes, embedding_dim)
         A_temp = A[:, 1:].flip([1])
 
-        X_sum = torch.einsum("blij,blio->bjo", A_temp, X_enc) #/ num_nodes
+        X_sum = torch.einsum("blij,blio->bjo", A_temp, X_enc)  # / num_nodes
 
         X_sum = torch.cat((X_sum, E[..., 0, :, :]), dim=-1)
 

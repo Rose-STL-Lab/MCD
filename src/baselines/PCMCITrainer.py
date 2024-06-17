@@ -1,16 +1,17 @@
 from typing import Any
-from src.baselines.BaselineTrainer import BaselineTrainer
+from copy import deepcopy
+
 import numpy as np
-from src.utils.data_utils.data_format_utils import to_time_aggregated_graph_np, zero_out_diag_np, zero_out_diag_torch
 # import tigramite for pcmci
-import tigramite
 from tigramite import data_processing as pp
 from tigramite.pcmci import PCMCI
 from tigramite.independence_tests.parcorr import ParCorr
 from tigramite.independence_tests.cmiknn import CMIknn
-from copy import deepcopy
 import torch
-from src.utils.causality_utils import *
+
+from src.utils.causality_utils import convert_temporal_to_static_adjacency_matrix, cpdag2dags
+from src.baselines.BaselineTrainer import BaselineTrainer
+from src.utils.data_utils.data_format_utils import to_time_aggregated_graph_np, zero_out_diag_np
 
 """
 Large parts adapted from https://github.com/microsoft/causica
@@ -33,7 +34,6 @@ class PCMCITrainer(BaselineTrainer):
                  group_by_graph: bool = False,
                  ignore_self_connections: bool = False
                  ):
-        
         self.group_by_graph = group_by_graph
         self.ignore_self_connections = ignore_self_connections
         if self.group_by_graph:
@@ -97,8 +97,7 @@ class PCMCITrainer(BaselineTrainer):
     def _run_pcmci(self, pcmci, tau_max, pc_alpha):
         if self.pcmci_plus:
             return pcmci.run_pcmciplus(tau_max=tau_max, pc_alpha=pc_alpha)
-        else:
-            return pcmci.run_pcmci(tau_max=tau_max, pc_alpha=pc_alpha)
+        return pcmci.run_pcmci(tau_max=tau_max, pc_alpha=pc_alpha)
 
     def _process_cpdag(self, adj_matrix: np.ndarray):
         """
@@ -109,7 +108,6 @@ class PCMCITrainer(BaselineTrainer):
         Returns:
             adj_matrix: np.ndarray with shape [num_possible_dags, lag+1, num_nodes, num_nodes]
         """
-        
         lag_plus, num_nodes = adj_matrix.shape[0], adj_matrix.shape[1]
         static_temporal_graph = convert_temporal_to_static_adjacency_matrix(
             adj_matrix, conversion_type="auto_regressive"
@@ -130,13 +128,10 @@ class PCMCITrainer(BaselineTrainer):
 
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
         X, adj_matrix, graph_index = batch
-
-        batch_size, timesteps, num_nodes, data_dim = X.shape
+        batch_size, timesteps, num_nodes, _ = X.shape
         assert num_nodes == self.num_nodes
-        
         X = X.view(batch_size, timesteps, -1)
         X, adj_matrix, graph_index = X.numpy(), adj_matrix.numpy(), graph_index.numpy()
-        
         graphs = [] #np.zeros((batch_size, self.lag+1, num_nodes, num_nodes))
         new_adj_matrix = []
         if self.group_by_graph:
@@ -144,8 +139,6 @@ class PCMCITrainer(BaselineTrainer):
         else:
             graph_index = np.zeros((batch_size))
             n_unique_matrices = 1
-
-        unique_matrices = np.unique(adj_matrix, axis=0)
         for i in range(n_unique_matrices):
             print(f"{i}/{n_unique_matrices}")
             n_samples = np.sum(graph_index == i)
@@ -156,13 +149,9 @@ class PCMCITrainer(BaselineTrainer):
                 verbosity=0)
 
             results = self._run_pcmci(pcmci, self.lag, self.pc_alpha)
-
             graph = self._process_adj_matrix(results["graph"])
-            
             graph = self._process_cpdag(graph)
-
             num_possible_dags = graph.shape[0]
-
             new_adj_matrix.append(np.repeat(adj_matrix[graph_index==i][0][np.newaxis, ...], n_samples*num_possible_dags, axis=0))
             graphs.append(np.repeat(graph, n_samples, axis=0))
 
@@ -174,3 +163,4 @@ class PCMCITrainer(BaselineTrainer):
                 graphs = zero_out_diag_np(graphs)
 
         return torch.Tensor(graphs), torch.Tensor(graphs), torch.Tensor(new_adj_matrix)
+    

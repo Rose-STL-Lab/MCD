@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch import nn
 from src.modules.adjacency_matrices.AdjMatrix import AdjMatrix
 
+
 class ThreeWayGraphDist(AdjMatrix, pl.LightningModule):
     """
     An alternative variational distribution for graph edges. For each pair of nodes x_i and x_j
@@ -38,7 +39,8 @@ class ThreeWayGraphDist(AdjMatrix, pl.LightningModule):
         self.tau_gumbel = tau_gumbel
         self.input_dim = input_dim
         self.lower_idxs = torch.unbind(
-            torch.tril_indices(self.input_dim, self.input_dim, offset=-1, device=self.device), 0
+            torch.tril_indices(self.input_dim, self.input_dim,
+                               offset=-1, device=self.device), 0
         )
 
     def _triangular_vec_to_matrix(self, vec):
@@ -47,7 +49,8 @@ class ThreeWayGraphDist(AdjMatrix, pl.LightningModule):
         (n, n) where the lower triangular is filled from vec[0, :] and the upper
         triangular is filled from vec[1, :].
         """
-        output = torch.zeros((self.input_dim, self.input_dim), device=self.device)
+        output = torch.zeros(
+            (self.input_dim, self.input_dim), device=self.device)
         output[self.lower_idxs[0], self.lower_idxs[1]] = vec[0, ...]
         output[self.lower_idxs[1], self.lower_idxs[0]] = vec[1, ...]
         return output
@@ -60,8 +63,7 @@ class ThreeWayGraphDist(AdjMatrix, pl.LightningModule):
         out_probs = self._triangular_vec_to_matrix(probs)
         if do_round:
             return out_probs.round()
-        else:
-            return out_probs
+        return out_probs
 
     def entropy(self) -> torch.Tensor:
         """
@@ -80,6 +82,6 @@ class ThreeWayGraphDist(AdjMatrix, pl.LightningModule):
 
         V1: Returns one sample to be used for the whole batch.
         """
-        sample = F.gumbel_softmax(self.logits, tau=self.tau_gumbel, hard=True, dim=0)  # (3, n(n-1)/2) binary
+        sample = F.gumbel_softmax(
+            self.logits, tau=self.tau_gumbel, hard=True, dim=0)  # (3, n(n-1)/2) binary
         return self._triangular_vec_to_matrix(sample)
-

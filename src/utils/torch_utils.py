@@ -2,9 +2,10 @@
 Borrowed from github.com/microsoft/causica
 """
 
-from typing import List, Optional, Tuple, Type, Union
+from typing import List, Optional, Type
 from torch.nn import Dropout, LayerNorm, Linear, Module, Sequential
 import torch
+
 
 class resBlock(Module):
     """
@@ -40,7 +41,8 @@ def generate_fully_connected(
     Args:
         input_dim: Int. Size of input to network.
         output_dim: Int. Size of output of network.
-        hidden_dims: List of int. Sizes of internal hidden layers. i.e. [a, b] is three linear layers with shapes (input_dim, a), (a, b), (b, output_dim)
+        hidden_dims: List of int. Sizes of internal hidden layers. i.e. 
+        [a, b] is three linear layers with shapes (input_dim, a), (a, b), (b, output_dim)
         non_linearity: Non linear activation function used between Linear layers.
         activation: Final layer activation to use.
         device: torch device to load weights to.

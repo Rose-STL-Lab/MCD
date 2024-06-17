@@ -1,9 +1,8 @@
 
 import lightning.pytorch as pl
 import torch
-import torch.distributions as td
-import torch.nn.functional as F
 from torch import nn
+
 
 class MultiLinearCausalGraph(pl.LightningModule):
 
@@ -26,13 +25,13 @@ class MultiLinearCausalGraph(pl.LightningModule):
             torch.randn(self.num_graphs, self.lag+1, input_dim, input_dim, device=self.device)*0.5, requires_grad=True
         )
         self.I = torch.arange(input_dim)
-        self.mask = torch.ones((self.num_graphs, self.lag+1, input_dim, input_dim))
-        self.mask[:, 0, self.I, self.I] = 0 
+        self.mask = torch.ones(
+            (self.num_graphs, self.lag+1, input_dim, input_dim))
+        self.mask[:, 0, self.I, self.I] = 0
         self.input_dim = input_dim
- 
+
     def get_w(self) -> torch.Tensor:
         """
         Returns the matrix. Ensures that the instantaneous matrix has zero in the diagonals
         """
         return self.w * self.mask.to(self.device)
-    

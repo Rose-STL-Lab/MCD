@@ -1,22 +1,21 @@
+import os
 import argparse
 import yaml
-import os
-import json
-
 from data_generation_utils import generate_cts_temporal_data, generate_name, set_random_seed
 
 
 def main(config_file):
 
     # read the yaml file
-    with open(config_file) as f:
+    with open(config_file, encoding="utf-8") as f:
         data_config = yaml.load(f, Loader=yaml.FullLoader)
-    
+
     series_length = int(data_config["num_timesteps"])
     burnin_length = int(data_config["burnin_length"])
     num_samples = int(data_config["num_samples"])
     disable_inst = bool(data_config["disable_inst"])
-    graph_type = [data_config["inst_graph_type"], data_config["lag_graph_type"]]
+    graph_type = [data_config["inst_graph_type"],
+                  data_config["lag_graph_type"]]
 
     connection_factor = 1
 
@@ -46,7 +45,8 @@ def main(config_file):
                 N = int(N)
                 N_G = int(N_G)
                 graph_config = [
-                    {"m": N * 2 * connection_factor if not disable_inst else 0, "directed": True},
+                    {"m": N * 2 * connection_factor if not disable_inst else 0,
+                        "directed": True},
                     {"m": N * connection_factor, "directed": True},
                 ]
 
@@ -66,7 +66,6 @@ def main(config_file):
                     base_noise_type=base_noise_type
                 )
                 path = os.path.join(save_dir, folder_name)
-
 
                 generate_cts_temporal_data(
                     path=path,

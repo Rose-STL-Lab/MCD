@@ -1,24 +1,25 @@
 import lightning.pytorch as pl
-import torch.nn as nn
+from torch import nn
 import torch
 from src.modules.MultiEmbedding import MultiEmbedding
 from src.utils.torch_utils import generate_fully_connected
 
+
 class MultiCausalDecoder(pl.LightningModule):
 
     def __init__(self,
-                 data_dim: int, 
-                 lag: int,  
-                 num_nodes: int, 
+                 data_dim: int,
+                 lag: int,
+                 num_nodes: int,
                  num_graphs: int,
                  embedding_dim: int = None,
                  skip_connection: bool = False,
                  linear: bool = False,
                  dropout_p: float = 0.0
                  ):
-        
+
         super().__init__()
-        
+
         if embedding_dim is not None:
             self.embedding_dim = embedding_dim
         else:
@@ -38,7 +39,7 @@ class MultiCausalDecoder(pl.LightningModule):
 
             self.f = generate_fully_connected(
                 input_dim=input_dim,
-                output_dim=num_nodes*data_dim, #potentially num_nodes
+                output_dim=num_nodes*data_dim,  # potentially num_nodes
                 hidden_dims=[self.nn_size, self.nn_size],
                 non_linearity=nn.LeakyReLU,
                 activation=nn.Identity,
@@ -62,7 +63,7 @@ class MultiCausalDecoder(pl.LightningModule):
                                                 lag=self.lag,
                                                 num_graphs=self.num_graphs,
                                                 embedding_dim=self.embedding_dim)
-        
+
         else:
             self.w = nn.Parameter(
                 torch.randn(self.num_graphs, self.lag+1, self.num_nodes, self.num_nodes, device=self.device)*0.5, requires_grad=True
@@ -86,14 +87,15 @@ class MultiCausalDecoder(pl.LightningModule):
             # reshape X to the correct shape
             A = A.unsqueeze(0).expand((batch, -1, -1, -1, -1))
             E = E.unsqueeze(0).expand((batch, -1, -1, -1, -1))
-            X_input = X_input.unsqueeze(1).expand((-1, self.num_graphs, -1, -1, -1))
+            X_input = X_input.unsqueeze(1).expand(
+                (-1, self.num_graphs, -1, -1, -1))
 
             # ensure we have the correct shape
-            assert (A.shape[0] == batch and A.shape[1] == self.num_graphs and 
-                    A.shape[2] == lag + 1 and A.shape[3] == num_nodes and 
+            assert (A.shape[0] == batch and A.shape[1] == self.num_graphs and
+                    A.shape[2] == lag + 1 and A.shape[3] == num_nodes and
                     A.shape[4] == num_nodes)
-            assert (E.shape[0] == batch and E.shape[1] == self.num_graphs 
-                    and E.shape[2] == lag+1 and E.shape[3] == num_nodes 
+            assert (E.shape[0] == batch and E.shape[1] == self.num_graphs
+                    and E.shape[2] == lag+1 and E.shape[3] == num_nodes
                     and E.shape[4] == self.embedding_dim)
 
             X_in = torch.cat((X_input, E), dim=-1)
@@ -102,15 +104,14 @@ class MultiCausalDecoder(pl.LightningModule):
             A_temp = A.flip([2])
             # get the parents of X
             X_sum = torch.einsum("bnlij,bnlio->bnjo", A_temp, X_enc)
-            
+
             X_sum = torch.cat([X_sum, E[:, :, 0, :, :]], dim=-1)
             # (batch, num_graphs, num_nodes, embedding_dim)
             # pass through f network to get the predictions
-            self.group_mask = torch.eye(num_nodes*data_dim).to(self.device)
+            group_mask = torch.eye(num_nodes*data_dim).to(self.device)
 
             # (batch, num_graphs, num_nodes, data_dim)
-            return torch.sum(self.f(X_sum)*self.group_mask, dim=-1).unsqueeze(-1)
+            return torch.sum(self.f(X_sum)*group_mask, dim=-1).unsqueeze(-1)
 
-        else:
-            return torch.einsum("klij,blio->bkjo", (self.w * A).flip([1]), X_input)
-        # return self.f(X_sum)  
+        return torch.einsum("klij,blio->bkjo", (self.w * A).flip([1]), X_input)
+        # return self.f(X_sum)
