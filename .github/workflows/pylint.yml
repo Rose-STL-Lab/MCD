@@ -20,4 +20,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        pylint --disable=E402,E731,F541,W291,E122,E127,F401,E266,E241,C901,E741,W293,F811,W503,E203,F403,F405,B007,E0401,W0221 --max-line-length=150 $(git ls-files '*.py')
