@@ -1,13 +1,14 @@
 from typing import Any
-from src.baselines.BaselineTrainer import BaselineTrainer
 import numpy as np
 import torch
 
-from src.utils.data_utils.data_format_utils import to_time_aggregated_graph_np, to_time_aggregated_scores_np, zero_out_diag_np, zero_out_diag_torch
 # import tigramite for pcmci
-from src.modules.dynotears.dynotears import from_pandas_dynamic
 import networkx as nx
 import pandas as pd
+
+from src.baselines.BaselineTrainer import BaselineTrainer
+from src.modules.dynotears.dynotears import from_pandas_dynamic
+from src.utils.data_utils.data_format_utils import to_time_aggregated_graph_np, to_time_aggregated_scores_np, zero_out_diag_np
 
 class DYNOTEARSTrainer(BaselineTrainer):
 
@@ -43,7 +44,6 @@ class DYNOTEARSTrainer(BaselineTrainer):
                          num_workers=num_workers,
                          aggregated_graph=aggregated_graph)
 
-        
         self.max_iter = max_iter
         self.lambda_w = lambda_w
         self.lambda_a = lambda_a
@@ -58,7 +58,7 @@ class DYNOTEARSTrainer(BaselineTrainer):
     def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
         X, adj_matrix, graph_index = batch
 
-        batch_size, timesteps, num_nodes, data_dim = X.shape
+        batch_size, timesteps, num_nodes, _ = X.shape
         assert num_nodes == self.num_nodes
         X = X.view(batch_size, timesteps, -1)
 
@@ -68,10 +68,8 @@ class DYNOTEARSTrainer(BaselineTrainer):
 
         graphs = np.zeros((batch_size, self.lag+1, num_nodes, num_nodes))
         scores = np.zeros((batch_size, self.lag+1, num_nodes, num_nodes))
-        
         if self.group_by_graph:
             n_unique_matrices = np.max(graph_index)+1
-            unique_matrices = np.unique(adj_matrix, axis=0)
         else:
             graph_index = np.zeros((batch_size))
             n_unique_matrices = 1
@@ -81,7 +79,6 @@ class DYNOTEARSTrainer(BaselineTrainer):
             n_samples = np.sum(graph_index == i)
             for x in X[graph_index == i]:
                 X_list.append(pd.DataFrame(x))
-            
             learner = from_pandas_dynamic(
                 X_list,
                 p=self.lag,
@@ -102,16 +99,13 @@ class DYNOTEARSTrainer(BaselineTrainer):
             # scores = np.hstack(temporal_adj_list)
             temporal_adj = [(score != 0).astype(int) for _ in range(n_samples)]
             score = [np.abs(score) for _ in range(n_samples)]
-            
             graphs[i == graph_index] = np.array(temporal_adj)
             scores[i == graph_index] = np.array(score)
-            
-
         if self.aggregated_graph:
             graphs = to_time_aggregated_graph_np(graphs)
             scores = to_time_aggregated_scores_np(scores)
             if self.ignore_self_connections:
                 graphs = zero_out_diag_np(graphs)
                 scores = zero_out_diag_np(scores)
-                
         return torch.Tensor(graphs), torch.abs(torch.Tensor(scores)), torch.Tensor(adj_matrix)
+    

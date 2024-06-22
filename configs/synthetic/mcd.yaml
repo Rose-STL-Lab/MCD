@@ -1,6 +1,6 @@
 # hyperparameters
 watch_gradients: false
-num_epochs: 1
+num_epochs: 10000
 model: mcd
 monitor_checkpoint_based_on: likelihood
 

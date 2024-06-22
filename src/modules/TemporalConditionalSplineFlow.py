@@ -1,17 +1,11 @@
 import lightning.pytorch as pl
-import torch.nn as nn
+from torch import nn
 import torch
 
 import pyro.distributions as distrib
-import torch.distributions as td
-from pyro.distributions.conditional import ConditionalTransform
-from pyro.distributions.transforms import ComposeTransform
-from pyro.distributions.transforms.spline import ConditionalSpline, Spline
-
-from src.modules.TemporalHyperNet import TemporalHyperNet
+from pyro.distributions.transforms.spline import ConditionalSpline
 from pyro.distributions import constraints
 from pyro.distributions.torch_transform import TransformModule
-from torch import nn
 
 
 class AffineDiagonalPyro(TransformModule):
@@ -65,11 +59,11 @@ class TemporalConditionalSplineFlow(pl.LightningModule):
         self.num_bins = self.hypernet.num_bins
         self.order = self.hypernet.order
 
-    def log_prob(self, 
-                 X_input: torch.Tensor, 
-                 X_history: torch.Tensor, 
+    def log_prob(self,
+                 X_input: torch.Tensor,
+                 X_history: torch.Tensor,
                  A: torch.Tensor,
-                 embeddings: torch.Tensor=None):
+                 embeddings: torch.Tensor = None):
         """
         Args:
             X_input: input data of shape (batch, num_nodes, data_dim)
@@ -80,10 +74,10 @@ class TemporalConditionalSplineFlow(pl.LightningModule):
 
         assert len(X_history.shape) == 4
 
-        batch, lag, num_nodes, data_dim = X_history.shape
+        _, _, num_nodes, data_dim = X_history.shape
 
         # if not self.trainable_embeddings:
-        self.transform = nn.ModuleList(
+        transform = nn.ModuleList(
             [
                 ConditionalSpline(
                     self.hypernet, input_dim=num_nodes*data_dim, count_bins=self.num_bins, order=self.order, bound=5.0
@@ -95,7 +89,7 @@ class TemporalConditionalSplineFlow(pl.LightningModule):
                 # AffineDiagonalPyro(input_dim=self.num_nodes*self.data_dim)
             ]
         )
-        self.base_dist = distrib.Normal(
+        base_dist = distrib.Normal(
             torch.zeros(num_nodes*data_dim, device=self.device), torch.ones(
                 num_nodes*data_dim, device=self.device)
         )
@@ -103,17 +97,17 @@ class TemporalConditionalSplineFlow(pl.LightningModule):
 
         context_dict = {"X": X_history, "A": A, "embeddings": embeddings}
         flow_dist = distrib.ConditionalTransformedDistribution(
-            self.base_dist, self.transform).condition(context_dict)
+            base_dist, transform).condition(context_dict)
         return flow_dist.log_prob(X_input)
 
-    def sample(self, 
-               N_samples: int, 
-               X_history: torch.Tensor,  
+    def sample(self,
+               N_samples: int,
+               X_history: torch.Tensor,
                W: torch.Tensor,
                embeddings: torch.Tensor):
         assert len(X_history.shape) == 4
 
-        batch, lag, num_nodes, data_dim = X_history.shape
+        batch, _, num_nodes, data_dim = X_history.shape
 
         base_dist = distrib.Normal(
             torch.zeros(num_nodes*data_dim, device=self.device), torch.ones(

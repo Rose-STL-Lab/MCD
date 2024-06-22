@@ -1,9 +1,7 @@
-import numpy as np
 import os
-from matplotlib.animation import FuncAnimation, PillowWriter
-import matplotlib.pyplot as plt
-import seaborn as sns
 import csv
+import numpy as np
+
 
 def standard_scaling(X, across_samples=False):
     # expected X of shape (n_samples, timesteps, num_nodes, data_dim) or (n_samples, timesteps, num_nodes)
@@ -31,10 +29,10 @@ def min_max_scaling(X, across_samples=False):
         mins = np.amin(X, axis=(1))[:, np.newaxis]
         maxs = np.amax(X, axis=(1))[:, np.newaxis]
 
-    eps = 1e-6
     Y = (X-mins) / (maxs - mins) * 2 - 1
 
     return Y
+
 
 def write_results_to_disk(dataset, metrics):
     # write results to file
@@ -45,7 +43,7 @@ def write_results_to_disk(dataset, metrics):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    with open(results_file, 'a') as csvfile:
+    with open(results_file, 'a', encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=list(metrics.keys()))
         if not file_exists:
             writer.writeheader()

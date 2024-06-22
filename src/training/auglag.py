@@ -4,12 +4,12 @@ Borrowed from https://github.com/microsoft/causica
 
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Optional, Union, Dict
+from typing import Any, Optional, Dict
 
 import torch
-from torch.optim import Optimizer
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import STEP_OUTPUT
+
 
 class AugLagLossCalculator(torch.nn.Module):
     def __init__(self, init_alpha: float, init_rho: float):
@@ -19,8 +19,10 @@ class AugLagLossCalculator(torch.nn.Module):
 
         self.alpha: torch.Tensor
         self.rho: torch.Tensor
-        self.register_buffer("alpha", torch.tensor(self.init_alpha, dtype=torch.float))
-        self.register_buffer("rho", torch.tensor(self.init_rho, dtype=torch.float))
+        self.register_buffer("alpha", torch.tensor(
+            self.init_alpha, dtype=torch.float))
+        self.register_buffer("rho", torch.tensor(
+            self.init_rho, dtype=torch.float))
 
     def forward(self, objective: torch.Tensor, constraint: torch.Tensor) -> torch.Tensor:
         return objective + self.alpha * constraint + self.rho * constraint * constraint / 2
@@ -55,7 +57,8 @@ class AugLagLRConfig:
     lr_update_lag: int = 500
     lr_update_lag_best: int = 250
     lr_init_dict: Dict[str, float] = field(
-        default_factory=lambda: {"vardist": 0.1, "functional_relationships": 0.0003, "noise_dist": 0.003, 'linear_causal_graph': 1}
+        default_factory=lambda: {
+            "vardist": 0.1, "functional_relationships": 0.0003, "noise_dist": 0.003, 'linear_causal_graph': 1}
     )
     aggregation_period: int = 20
     lr_factor: float = 0.1
@@ -72,6 +75,7 @@ class AugLagLRConfig:
     penalty_tolerance: float = 1e-5
     max_inner_steps: int = 3000
     force_not_converged: bool = False
+
 
 @dataclass
 class AugLagLRDYNOTEARSConfig:
@@ -93,9 +97,10 @@ class AugLagLRDYNOTEARSConfig:
     penalty_tolerance: float = 1e-5
     max_opt_iter: int = 200
     lr_init_dict: Dict[str, float] = field(
-        default_factory = lambda: {"w": 0.2, 'mixing_probs': 1}
+        default_factory=lambda: {"w": 0.2, 'mixing_probs': 1}
     )
-    
+
+
 class AugLagLR:
     """A Pytorch like scheduler which performs the Augmented Lagrangian optimization procedure.
 
@@ -116,7 +121,8 @@ class AugLagLR:
         self._prev_lagrangian_penalty = torch.tensor(torch.inf)
         self._cur_lagrangian_penalty = torch.tensor(torch.inf)
 
-        self.loss_tracker: deque[torch.Tensor] = deque([], maxlen=config.aggregation_period)
+        self.loss_tracker: deque[torch.Tensor] = deque(
+            [], maxlen=config.aggregation_period)
         self._init_new_inner_optimisation()
 
         # Track whether auglag is disabled and the state of the loss when it was disabled
@@ -139,10 +145,15 @@ class AugLagLR:
         Returns:
             bool: Return True if converged, else False.
         """
-        if self.step_counter >= self.config.max_inner_steps or self.num_lr_updates >= self.config.max_lr_down or self.last_best_step + self.config.inner_early_stopping_patience <= self.step_counter:
-            print("Step counter condition", self.step_counter >= self.config.max_inner_steps)
-            print("Update condition:", self.num_lr_updates >= self.config.max_lr_down)
-            print("Early stopping condition:", self.last_best_step + self.config.inner_early_stopping_patience <= self.step_counter)
+        if self.step_counter >= self.config.max_inner_steps \
+            or self.num_lr_updates >= self.config.max_lr_down \
+                or self.last_best_step + self.config.inner_early_stopping_patience <= self.step_counter:
+            print("Step counter condition", self.step_counter >=
+                  self.config.max_inner_steps)
+            print("Update condition:", self.num_lr_updates >=
+                  self.config.max_lr_down)
+            print("Early stopping condition:", self.last_best_step +
+                  self.config.inner_early_stopping_patience <= self.step_counter)
 
         return (
             self.step_counter >= self.config.max_inner_steps
@@ -164,9 +175,12 @@ class AugLagLR:
             return self.outer_opt_counter >= self.config.max_outer_steps
 
         if self.outer_opt_counter >= self.config.max_outer_steps or self.outer_below_penalty_tol >= self.config.patience_penalty_reached or self.outer_max_rho >= self.config.patience_max_rho:
-            print("Outer opt condition:", self.outer_opt_counter >= self.config.max_outer_steps)
-            print("Penalty condition:", self.outer_below_penalty_tol >= self.config.patience_penalty_reached)
-            print("Rho condition:", self.outer_max_rho >= self.config.patience_max_rho)
+            print("Outer opt condition:", self.outer_opt_counter >=
+                  self.config.max_outer_steps)
+            print("Penalty condition:", self.outer_below_penalty_tol >=
+                  self.config.patience_penalty_reached)
+            print("Rho condition:", self.outer_max_rho >=
+                  self.config.patience_max_rho)
 
         return (
             self.outer_opt_counter >= self.config.max_outer_steps
@@ -204,11 +218,13 @@ class AugLagLR:
             for opt in optimizer:
                 for param_group in opt.param_groups:
                     param_group["lr"] *= self.config.lr_factor
-                    print("Setting lr:", param_group["lr"], "for", param_group["name"])
+                    print("Setting lr:",
+                          param_group["lr"], "for", param_group["name"])
         else:
             for param_group in optimizer.param_groups:
                 param_group["lr"] *= self.config.lr_factor
-                print("Setting lr:", param_group["lr"], "for", param_group["name"])
+                print("Setting lr:",
+                      param_group["lr"], "for", param_group["name"])
 
     def reset_lr(self, optimizer):
         """Reset the learning rate of individual param groups from lr init dictionary.
@@ -222,11 +238,13 @@ class AugLagLR:
             for opt in optimizer:
                 for param_group in opt.param_groups:
                     param_group["lr"] = self.config.lr_init_dict[param_group["name"]]
-                    print("Resetting lr to", param_group["lr"], "for", param_group["name"])
+                    print("Resetting lr to",
+                          param_group["lr"], "for", param_group["name"])
         else:
             for param_group in optimizer.param_groups:
                 param_group["lr"] = self.config.lr_init_dict[param_group["name"]]
-                print("Resetting lr to", param_group["lr"], "for", param_group["name"])
+                print("Resetting lr to",
+                      param_group["lr"], "for", param_group["name"])
 
     def _update_lagrangian_params(self, loss: AugLagLossCalculator):
         """Update the lagrangian parameters (of the auglag routine) based on the dag constraint values observed.
@@ -243,7 +261,8 @@ class AugLagLR:
             self.outer_max_rho += 1
 
         if self._cur_lagrangian_penalty > self._prev_lagrangian_penalty * self.config.penalty_progress_rate:
-            print(f"Updating rho, dag penalty prev: {self._prev_lagrangian_penalty: .10f}")
+            print(
+                f"Updating rho, dag penalty prev: {self._prev_lagrangian_penalty: .10f}")
             loss.rho *= 10.0
             print("Rho", loss.rho.item(), " Alpha", loss.alpha.item())
         else:
@@ -257,8 +276,10 @@ class AugLagLR:
             loss.alpha *= 5
 
         # Update parameters and make sure to maintain the dtype and device
-        loss.alpha = torch.min(loss.alpha, torch.full_like(loss.alpha, self.config.safety_alpha))
-        loss.rho = torch.min(loss.rho, torch.full_like(loss.rho, self.config.safety_rho))
+        loss.alpha = torch.min(loss.alpha, torch.full_like(
+            loss.alpha, self.config.safety_alpha))
+        loss.rho = torch.min(loss.rho, torch.full_like(
+            loss.rho, self.config.safety_rho))
 
     def _is_auglag_converged(self, optimizer, loss: AugLagLossCalculator) -> bool:
         """Checks if the inner and outer loops have converged. If inner loop is converged,
@@ -366,22 +387,24 @@ class AugLagLR:
         """
         if self.disabled:
             return False
-        assert torch.all(lagrangian_penalty >= 0), "auglag penalty must be non-negative"
+        assert torch.all(lagrangian_penalty >=
+                         0), "auglag penalty must be non-negative"
         self._update_loss_tracker(loss_value.detach())
         self._cur_lagrangian_penalty = lagrangian_penalty.detach()
         self.step_counter += 1
         if self.step_counter % 100 == 0:
-            print(f"Step:{self.step_counter} loss:{loss_value.item():.3f} "+\
-                  f"likelihood:{likelihood.item():.3f} dag:{self._cur_lagrangian_penalty.item():.3f} "+\
+            print(f"Step:{self.step_counter} loss:{loss_value.item():.3f} " +
+                  f"likelihood:{likelihood.item():.3f} dag:{self._cur_lagrangian_penalty.item():.3f} " +
                   f"graph prior:{graph_prior.item():.3f} graph entropy:{graph_entropy.item():.3f}")
 
         self._check_best_loss()
         return self._is_auglag_converged(optimizer=optimizer, loss=loss)
-    
+
+
 class AuglagLRCallback(pl.Callback):
     """Wrapper Class to make the Auglag Learning Rate Scheduler compatible with Pytorch Lightning"""
 
-    def __init__(self, scheduler: AugLagLR, log_auglag: bool = False, disabled_epochs = None):
+    def __init__(self, scheduler: AugLagLR, log_auglag: bool = False, disabled_epochs=None):
         """
         Args:
             scheduler: The auglag learning rate scheduler to wrap.
@@ -434,5 +457,5 @@ class AuglagLRCallback(pl.Callback):
                 "last_best_step": float(self.scheduler.last_best_step),
                 "last_lr_update_step": float(self.scheduler.last_lr_update_step),
             }
-            pl_module.log_dict(auglag_state, on_epoch=True, rank_zero_only=True, prog_bar=False)
-
+            pl_module.log_dict(auglag_state, on_epoch=True,
+                               rank_zero_only=True, prog_bar=False)

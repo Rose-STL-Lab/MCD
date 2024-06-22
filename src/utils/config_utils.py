@@ -1,6 +1,7 @@
 from datetime import datetime
-from omegaconf import DictConfig, OmegaConf, open_dict
+from omegaconf import DictConfig, open_dict
 from sklearn.model_selection import ParameterGrid
+
 
 def generate_unique_name(config):
     # generate unique name based on the config
@@ -9,22 +10,24 @@ def generate_unique_name(config):
     run_name += datetime.now().strftime("%Y%m%d_%H_%M_%S")
     return run_name
 
+
 def read_optional(config, arg, default):
     if arg in config:
         return config[arg]
-    else:
-        return default
+    return default
 
 
 def add_attribute(config: DictConfig, name, val):
     with open_dict(config):
         config[name] = val
 
+
 def add_all_attributes(cfg, cfg2):
     # add all attributes from cfg2 to cfg
     for key in cfg2:
         add_attribute(cfg, key, cfg2[key])
-    
+
+
 def build_subdictionary(hyperparameters, loop_hyperparameters):
     """
     Given dictionary of hyperparameters (where some of the values may be lists) and a list of keys

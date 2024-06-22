@@ -125,7 +125,8 @@ def random_acyclic_orientation(B_und: np.ndarray) -> np.ndarray:
 def generate_single_graph(num_nodes: int, graph_type: str, graph_config: dict, is_DAG: bool = True) -> np.ndarray:
     """
     This will generate a single adjacency matrix following different graph generation methods (specified by graph_type, can be "ER", "SF", "SBM").
-    graph_config specifes the additional configurations for graph_type. For example, for "ER", the config dict keys can be {"p", "m", "directed", "loop"},
+    graph_config specifes the additional configurations for graph_type. 
+    For example, for "ER", the config dict keys can be {"p", "m", "directed", "loop"},
     refer to igraph for details. is_DAG is to ensure the generated graph is a DAG by lower-trianguler the adj, followed by a permutation.
     Note that SBM will no longer be a proper SBM if is_DAG=True
     Args:
@@ -443,10 +444,11 @@ def generate_cts_temporal_data(
     noise_function_type: str = "spline",
     save_data: bool = True,
     base_noise_type: str = "gaussian",
-    temporal_graphs = None
+    temporal_graphs=None
 ) -> np.ndarray:
     """
-    This will generate continuous time-series data (with history-depdendent noise). It will start to collect the data after the burnin_length for stationarity.
+    This will generate continuous time-series data (with history-depdendent noise). 
+    It will start to collect the data after the burnin_length for stationarity.
     Args:
         path: The output dir path.
         series_length: The time series length to be generated.
@@ -632,8 +634,7 @@ def sample_function(input_dim: int, function_type: str) -> Callable:
         return sample_mlp_noise(input_dim)
     elif function_type == 'linear':
         return sample_linear(input_dim)
-    else:
-        raise ValueError(f"Unsupported function type: {function_type}")
+    raise ValueError(f"Unsupported function type: {function_type}")
 
 
 def sample_inverse_noise_spline(input_dim):
@@ -718,14 +719,17 @@ def sample_spline_product(input_dim):
 
     return func
 
+
 def sample_linear(input_dim):
     # sample weights
-    W = np.random.binomial(n=1, p=0.5, size=(input_dim))*np.random.uniform(0.1, 0.5, size=(input_dim))
-    
+    W = np.random.binomial(n=1, p=0.5, size=(input_dim)) * \
+        np.random.uniform(0.1, 0.5, size=(input_dim))
+
     def func(X):
         return X@W
 
     return func
+
 
 def zero_func() -> np.ndarray:
     return np.zeros(1)
@@ -751,7 +755,6 @@ def generate_name(
         noise_function_type = base_noise_type
     else:
         flag = "HistDep"
-
 
     if disable_inst:
         file_name = (

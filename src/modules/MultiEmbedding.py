@@ -1,9 +1,10 @@
 import lightning.pytorch as pl
-import torch.nn as nn
+from torch import nn
 import torch
 
+
 class MultiEmbedding(pl.LightningModule):
-    
+
     def __init__(
         self,
         num_nodes: int,
@@ -21,15 +22,15 @@ class MultiEmbedding(pl.LightningModule):
         self.embedding_dim = embedding_dim
 
         self.lag_embeddings = nn.Parameter((
-                torch.randn(self.num_graphs, self.lag, self.num_nodes,
-                            self.embedding_dim, device=self.device) * 0.01
-            ), requires_grad=True) 
+            torch.randn(self.num_graphs, self.lag, self.num_nodes,
+                        self.embedding_dim, device=self.device) * 0.01
+        ), requires_grad=True)
 
         self.inst_embeddings = nn.Parameter((
-                torch.randn(self.num_graphs, 1, self.num_nodes,
-                            self.embedding_dim, device=self.device) * 0.01
-            ), requires_grad=True) 
-    
+            torch.randn(self.num_graphs, 1, self.num_nodes,
+                        self.embedding_dim, device=self.device) * 0.01
+        ), requires_grad=True)
+
     def turn_off_inst_grad(self):
         self.inst_embeddings.requires_grad_(False)
 
@@ -38,5 +39,3 @@ class MultiEmbedding(pl.LightningModule):
 
     def get_embeddings(self):
         return torch.cat((self.inst_embeddings, self.lag_embeddings), dim=1)
-        
-    
