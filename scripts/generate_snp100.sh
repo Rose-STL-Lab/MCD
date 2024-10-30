@@ -1,1 +1,1 @@
-python3 -m src.utils.data_gen.generate_stock --stock_list_file data/snp100/snp100.csv --save_dir data/snp100/ --chunk_size 31
+python3 -m src.utils.data_gen.generate_stock --stock_list_file assets/snp100.csv --save_dir data/snp100/ --chunk_size 31
