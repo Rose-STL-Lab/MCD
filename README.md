@@ -1,6 +1,6 @@
 # Discovering Mixtures of Structural Causal Models from Time Series Data
 
-Implementation of the paper "Discovering Mixtures of Structural Causal Models from Time Series Data", to appear at ICML 2024, Vienna.
+Implementation of the paper "Discovering Mixtures of Structural Causal Models from Time Series Data", which appeared at ICML 2024, Vienna.
 
 Mixture Causal Discovery (MCD) aims to infer multiple causal graphs from time-series data. 
 
